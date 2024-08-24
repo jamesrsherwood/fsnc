@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sustainable Meal Planner</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/1.0.2/chartjs-plugin-annotation.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+
+<style>
+
+.container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start; 
+}
+
+.charts {
+  width: 40%;
+  margin-right: 10px; /* Add margin for spacing */
+}
+
+.chart-container {
+  margin: 10px;
+}
+
+.buttons-container {
+  width: 50%; /* Adjust width as needed */
+}
+
+#buttons {
+  margin-left: 0%; /* Adjust margin as needed */
+  margin-top: 0;
+}
+
+/* Add custom font to buttons */
+#buttons button {
+  display: block;
+  margin-bottom: 10px;
+  width: 60px;
+  height: 60px;
+  background-size: cover; /* Ensure the background image covers the entire button */
+  background-position: center; /* Center the background image */
+  font-family: Arial, sans-serif; /* Add custom font here */
+  font-size: 10px; /* Add custom font size here */
+  color: white;
+  text-shadow: 0 0 5px green;
+  display: inline-flex; /* Use inline-flex layout */
+  align-items: flex-end; /* Align text to the bottom */
+}
+
+@media only screen and (max-width: 600px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .charts, .buttons-container {
+    width: 100%; /* Adjust width for responsiveness */
+    margin-right: 0; /* Reset margin */
+  }
+}
+
+.custom-font-1 {
+  font-family: Arial, sans-serif; /* Change to the desired font */
+  font-size: 10px; /* Change to the desired font size */
+}
+
+.custom-font-2 {
+  font-family: Arial, sans-serif; 
+  font-size: 10px;
+  font-style: italic; 
+  font-weight: normal; 
+}
+
+#selectedFoodsList {
+  font-family: Arial, sans-serif; 
+  font-size: 10px;
+  font-weight: normal; 
+}
+
+#resetButton {
+  font-family: Arial, sans-serif; 
+  font-size: 10px; 
+}
+
+/* Style for the side-by-side charts */
+.side-by-side {
+  display: flex;
+  flex-direction: row;
+}
+
+.side-by-side .chart-container {
+  width: 50%; /* Each chart takes half of the container width */
+}
+
+</style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Charts section -->
+    <div class="charts">
+      <!-- Containers for the charts -->
+      <div class="chart-container">
+        <h3 class="custom-font-1"><a href="http://dx.doi.org/10.1002/fft2.371" target="_blank">Performance-weighted Environmental Sustainability (PwES)</a></h3>
+        <h3 class="custom-font-2">For the selected foods to be considered a sustainable meal, the PwES values must all be below 100%.</h3>
+        <canvas id="metricChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <div class="side-by-side">
+          <div class="chart-container">
+            <h3 class="custom-font-1">Nutrition</h3>
+            <h3 class="custom-font-2">Aim for NHS daily guideline of 2000 kcal, 30 g of fibre, 50 g of protein, and 5 portions of fruit and vegetables.</h3>
+            <canvas id="nutritionalChart"></canvas>
+          </div>
+          <div class="chart-container">
+            <h3 class="custom-font-1">Environmental impact</h3>
+            <h3 class="custom-font-2">Keep below the line for sustainable impacts. The target depends on the nutrition of the food(s).</h3>
+            <canvas id="environmentalChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Buttons and list section -->
+    <div class="buttons-container">
+      <!-- Buttons for each food item -->
+      <div id="buttons"></div>
+
+      <!-- List to show selected foods -->
+      <div>
+        <h3 class="custom-font-1">Selected Foods</h3>
+        <ul id="selectedFoodsList"></ul>
+      </div>
+
+      <!-- Reset button -->
+      <button id="resetButton">Reset foods</button>
+    </div>
+  </div>
+<script>
+
+const foodItems = [
+  "Lamb",
+  "Beef",
+  "Pork",
+  "Chicken",
+  "Egg",
+  "Milk",
+  "Cheese",
+  "Salmon",
+  "Prawns",
+  "Beans",
+  "Peas",
+  "Tofu",
+  "Soymilk",
+  "Lentils",
+  "Peanuts",
+  "Cashews",
+  "Walnuts",
+  "Carrots",
+  "Onions",
+  "Lettuce",
+  "Peppers",
+  "Sweetcorn",
+  "Cauliflower",
+  "Broccoli",
+  "Tomatoes",
+  "Sprouts",
+  "Cucumber",
+  "Apples",
+  "Oranges",
+  "Strawberries",
+  "Grapefruits",
+  "Raspberries",
+  "Grapes",
+  "Pineapples",
+  "Melons",
+  "Avocados",
+  "Bananas",
+  "Bread",
+  "Potatoes",
+  "Rice",
+  "Pasta",
+  "Oats",
+  "Beer",
+  "Wine",
+  "Chocolate",
+  "Sugar",
+  "Olive oil",
+];
+
+const quantDataSets = [
+    [0.09],
+    [0.09],
+    [0.09],
+    [0.09],
+    [0.12],
+    [0.2],
+    [0.03],
+    [0.134],
+    [0.12],
+    [0.08],
+    [0.075],
+    [0.105],
+    [0.25],
+    [0.15],
+    [0.03],
+    [0.03],
+    [0.03],
+    [0.08],
+    [0.059],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.08],
+    [0.088],
+    [0.18],
+    [0.075],
+    [0.075],
+    [0.04],
+    [0.56],
+    [0.2],
+    [0.045],
+    [0.0125],
+    [0.011],
+]
+
+const foodMultiples = {
+  "Lamb": 0.09,
+  "Beef": 0.09,
+  "Pork": 0.09,
+  "Chicken": 0.09,
+  "Egg": 0.12,
+  "Milk": 0.2,
+  "Cheese": 0.03,
+  "Salmon": 0.134,
+  "Prawns": 0.12,
+  "Beans": 0.08,
+  "Peas": 0.075,
+  "Tofu": 0.105,
+  "Soymilk": 0.25,
+  "Lentils": 0.15,
+  "Peanuts": 0.03,
+  "Cashews": 0.03,
+  "Walnuts": 0.03,
+  "Carrots": 0.08,
+  "Onions": 0.059,
+  "Lettuce": 0.08,
+  "Peppers": 0.08,
+  "Sweetcorn": 0.08,
+  "Cauliflower": 0.08,
+  "Broccoli": 0.08,
+  "Tomatoes": 0.08,
+  "Sprouts": 0.08,
+  "Cucumber": 0.08,
+  "Apples": 0.08,
+  "Oranges": 0.08,
+  "Strawberries": 0.08,
+  "Grapefruits": 0.08,
+  "Raspberries": 0.08,
+  "Grapes": 0.08,
+  "Pineapples": 0.08,
+  "Melons": 0.08,
+  "Avocados": 0.08,
+  "Bananas": 0.08,
+  "Bread": 0.088,
+  "Potatoes": 0.18,
+  "Rice" : 0.075,
+  "Pasta": 0.075,
+  "Oats": 0.04,
+  "Beer": 0.56,
+  "Wine": 0.2,
+  "Chocolate": 0.045,
+  "Sugar": 0.0125,
+  "Olive oil": 0.011,
+};
+
+const nutritionalDataSets = [    
+    [264.6, 0, 18.009, 0],
+    [249.3, 0, 17.946, 0],
+    [229.5, 0, 14.562, 0],
+    [215.1, 0, 15.588, 0],
+    [186, 0, 13.3152, 0],
+    [124, 0, 6.6, 0],
+    [100.2, 0, 6.24, 0],
+    [170.18, 0, 27.47, 0],
+    [102, 0, 25.2, 0],
+    [23.2, 1.92, 1.92, 1],
+    [60.75, 4.275, 3.75, 0.9375],
+    [152.25, 0.63, 13.335, 0],
+    [132.5, 0, 8.5, 0],
+    [174, 16.05, 32.115, 1.875],
+    [170.1, 2.55, 7.854, 0],
+    [165.9, 0.9, 5.4, 0],
+    [196.2, 2.01, 4.5, 0],
+    [32.8, 2.24, 0.744, 1],
+    [23.6, 1.003, 0.649, 0.7375],
+    [12, 0.96, 1.12, 1],
+    [20.8, 1.68, 0.792, 1],
+    [68.8, 1.6, 2.616, 1],
+    [20, 1.6, 1.52, 1],
+    [27.2, 2.08, 2.256, 1],
+    [14.4, 0.96, 0.72, 1],
+    [34.4, 3.04, 2.704, 1],
+    [12.4, 0.56, 0.56, 1],
+    [41.6, 1.92, 0.24, 1],
+    [37.6, 1.92, 0.72, 1],
+    [26.4, 1.6, 0.56, 1],
+    [25.6, 0.88, 0.48, 1],
+    [41.6, 5.2, 0.96, 1],
+    [53.6, 0.72, 0.48, 1],
+    [40, 1.12, 0.4, 1],
+    [27.2, 7.2, 0.64, 1],
+    [128, 5.36, 1.6, 1],
+    [71.2, 2.08, 0.88, 1],
+    [209.44, 5.28, 9.416, 0],
+    [131.76, 3.78, 3.6, 0],
+    [276.45, 5.025, 2.025, 0],
+    [278.25, 2.4, 9.75, 0],
+    [104.92, 4.04, 0.56, 0],
+    [229.6, 0, 2.016, 0],
+    [170, 0, 0.14, 0],
+    [269.1, 4.905, 3.5055, 0],
+    [48.375, 0, 0, 0],
+    [97.24, 0, 0, 0],
+];
+
+const environmentalDataSets = [    
+    [4.45344837398374, 33.2829, 162.844825925477],
+    [9.83482878787879, 29.3589, 131.202836817067],
+    [1.93900792741165, 1.5624, 162.182750285128],
+    [1.65390889694042, 1.0998, 59.9165579500525],
+    [0.641362920489297, 0.7524, 70.0408266566588],
+    [0.611650485436893, 1.7378640776699, 121.980582524272],
+    [0.717, 2.634, 168.15],
+    [1.91247811965812, 1.12694, 495.058734993229],
+    [3.2797, 0.3564, 421.897697643537],
+    [0.280029459707217, 0.126034115213135, 17.9616957076977],
+    [0.171701388888889, 0.5595, 30.408800309894],
+    [0.46809303652968, 0.3696, 15.7101747269933],
+    [0.245, 0.16005, 6.7415],
+    [0.498916666666667, 2.3355, 66.2224842284065],
+    [0.0969, 0.2733, 55.569],
+    [0.0129, 0.3888, 124.014],
+    [0.0129, 0.3888, 124.014],
+    [0.0344, 0.0264, 2.272],
+    [0.113531080185553, 0.02301, 0.880829694616397],
+    [0.112929984167046, 0.0077662184785117, 3.52412821454715],
+    [0.147898885576677, 0.0107490532968991, 0.59413027039957],
+    [0.22921430925347, 0.0348139267713115, 8.74826303348748],
+    [0.18379387254902, 0.044, 9.97580622193887],
+    [0.114533333333333, 0.044, 9.9343103136918],
+    [0.1672, 0.064, 29.584],
+    [0.145614875702697, 0.00927161242503874, 3.44016875812473],
+    [0.151015869815702, 0.00390749015839423, 1.21926668745652],
+    [0.0344, 0.0504, 14.408],
+    [0.0312, 0.0688, 6.616],
+    [0.1224, 0.1928, 33.568],
+    [0.0312, 0.0688, 6.616],
+    [0.1224, 0.1928, 33.568],
+    [0.1224, 0.1928, 33.568],
+    [0.147356674668527, 0.0423733129620424, 1.82346079266488],
+    [0.0603133653791174, 0.00785065547429187, 3.4007930957979],
+    [0.182342587670125, 0.142812513946535, 86.6610949749005],
+    [0.0688, 0.1544, 9.16],
+    [0.13816, 0.3388, 56.98],
+    [0.295267006802721, 0.1584, 12.3851550642041],
+    [0.484776830065359, 0.21, 168.951523327788],
+    [0.22169579414838, 0.0613125, 120.077052868009],
+    [0.191366666666667, 0.304, 19.4859144246279],
+    [0.654257425742574, 0.615445544554456, 9.48118811881188],
+    [0.331481481481481, 0.32962962962963, 14.6111111111111],
+    [2.1015, 3.105, 24.345],
+    [0.04, 0.0255, 7.75125],
+    [0.0648043478260869, 0.314576086956522, 3.80217391304348],
+];
+
+const dataLabels = [
+    "Calories", "Fibre", "Protein", "Fruit and veg",
+    "Climate Change", "Land use", "Freshwater use"
+];
+
+const buttonsContainer = document.getElementById('buttons');
+const nutritionalCtx = document.getElementById('nutritionalChart').getContext('2d');
+const environmentalCtx = document.getElementById('environmentalChart').getContext('2d');
+const metricCtx = document.getElementById('metricChart').getContext('2d');
+
+let metricChart;
+let nutritionalChart;
+let environmentalChart;
+let selectedFoods = [];
+
+function createButtons() {
+  const buttonsContainer = document.getElementById('buttons');
+  buttonsContainer.innerHTML = ''; // Clear existing buttons
+
+  // Define an array of image paths corresponding to each button
+  const imagePaths = [
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Lamb.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Beef.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Pork.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Chicken.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Egg.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Milk.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Cheese.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Salmon.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Prawns.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Beans.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Peas.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Tofu.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Soymilk.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Lentils.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Peanuts.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Cashews.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Walnuts.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Carrots.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Onion.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Lettuce.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Peppers.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Sweetcorn.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Cauliflower.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Broccoli.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Tomatoes.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Brussel sprouts.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Cucumber.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Apples.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Orange.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Strawberries.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Grapefruit.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Raspberries.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Grapes.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Pineapple.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Melon.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Avocado.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Banana.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Bread.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Potatoes.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Rice.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Pasta.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Oats.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Beer.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Wine.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Dark chocolate.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Cane sugar.png?raw=true',
+    'https://github.com/jamesrsherwood/PwES_food_sustainability/blob/main/Olive oil.png?raw=true',
+  ];
+
+  // Create a container for each group of buttons
+  const animalProductsContainer = createButtonGroup("Animal Products", 0, "custom-font-1");
+  const plantProteinsContainer = createButtonGroup("Plant Proteins", 9);
+  const vegetablesContainer = createButtonGroup("Vegetables", 17);
+  const fruitsContainer = createButtonGroup("Fruits", 27);
+  const fatsAndCarbsContainer = createButtonGroup("Fats and Carbs", 37);
+
+  // Append the containers to the buttonsContainer
+  buttonsContainer.appendChild(animalProductsContainer);
+  buttonsContainer.appendChild(plantProteinsContainer);
+  buttonsContainer.appendChild(vegetablesContainer);
+  buttonsContainer.appendChild(fruitsContainer);
+  buttonsContainer.appendChild(fatsAndCarbsContainer);
+
+// Function to create a container for each group of buttons with a heading
+function createButtonGroup(heading, startIndex) {
+  const container = document.createElement('div');
+  container.classList.add('chart-container');
+  const headingElement = document.createElement('h2');
+  headingElement.textContent = heading;
+  headingElement.classList.add('custom-font-1'); // Add custom font class
+  container.appendChild(headingElement);
+  const buttonGrid = document.createElement('div');
+  buttonGrid.classList.add('food-buttons-grid');
+  container.appendChild(buttonGrid);
+
+  // Function to create a button and append it to the specified container
+  function createButton(container, index) {
+    const button = document.createElement('button');
+    button.style.backgroundImage = `url('${imagePaths[index]}')`; // Set background image
+
+    // Create a span element to hold the name of the food item
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = foodItems[index]; // Set the text content to the food item name
+    button.appendChild(nameSpan); // Append the span to the button
+    button.style.color = 'white'; 
+    button.style.textShadow = '0 0 5px green';
+    button.style.display = 'inline-flex'; // Use inline-flex layout
+    button.style.alignItems = 'flex-end'; // Align text to the bottom
+
+    container.appendChild(button);
+
+    // Add event listener to the button
+    button.addEventListener('click', function() {
+      toggleFoodSelection(foodItems[index]);
+    });
+  }
+
+  // Add buttons to the button grid
+  for (let i = startIndex; i < startIndex + getButtonCount(heading); i++) {
+    createButton(buttonGrid, i);
+  }
+
+  return container;
+}
+
+
+  // Function to get the count of buttons for a specific group
+  function getButtonCount(groupName) {
+    switch (groupName) {
+      case "Animal Products":
+        return 9;
+      case "Plant Proteins":
+        return 8;
+      case "Vegetables":
+        return 10;
+      case "Fruits":
+        return 10;
+      case "Fats and Carbs":
+        return 10;
+      default:
+        return 0;
+    }
+  }
+}
+
+// Call the createButtons function to generate the buttons
+createButtons();
+
+// Function to calculate normalization factor 
+function getNormalizationFactor_n(index) {
+  switch (index) {
+    case 0: // calories
+      return 2000;
+    case 1: // fibre
+      return 30;
+    case 2: // protein
+      return 50;
+    case 3: // portions_fruit_veg
+      return 5;
+    default:
+      return 1;
+  }
+}
+
+// Constants
+const demand_national_calories = 83139221850000;
+const demand_personal_calories = 3373;
+const demand_personal_fibre = 26.4087154509874;
+const demand_personal_protein = 106.09;
+const demand_personal_veg = 5.41438356164384;
+const energy_economic_allocation = 0.299846487545041;
+const protein_economic_allocation = 0.48441534286451;
+const veg_economic_allocation = 0.0942688931451144;
+const fibre_economic_allocation = 0.119492389408539;
+const full_economic_allocation = energy_economic_allocation + fibre_economic_allocation + protein_economic_allocation + veg_economic_allocation;
+const climate_pb_cal = 13191795254.4133;
+const land_pb_cal = 33340264842.9302;
+const water_pb_cal = 5701548554118.68;
+
+// Target impacts
+let climate_target = 1, land_target = 1, water_target = 1;
+
+function updateCharts() {
+  if (metricChart) {
+    metricChart.destroy();
+  }
+  if (nutritionalChart) {
+    nutritionalChart.destroy();
+  }
+  if (environmentalChart) {
+    environmentalChart.destroy();
+  }
+
+  // Calculate total nutritional and environmental values
+  let total_calories = 0;
+  let total_fibre = 0;
+  let total_protein = 0;
+  let total_portions_fruit_veg = 0;
+  let total_climate_change = 0;
+  let total_land_use = 0;
+  let total_water_use = 0;
+
+  selectedFoods.forEach(food => {
+    const index = foodItems.indexOf(food);
+    // Sum up nutritional data
+    total_calories += nutritionalDataSets[index][0];
+    total_fibre += nutritionalDataSets[index][1];
+    total_protein += nutritionalDataSets[index][2];
+    total_portions_fruit_veg += nutritionalDataSets[index][3];
+    // Sum up environmental data
+    total_climate_change += environmentalDataSets[index][0];
+    total_land_use += environmentalDataSets[index][1];
+    total_water_use += environmentalDataSets[index][2];
+  });
+
+  // Calculate PwES values
+  const meal_NU_cal = total_calories / demand_personal_calories;
+  const meal_NU_fibre = total_fibre / demand_personal_fibre;
+  const meal_NU_protein = total_protein / demand_personal_protein;
+  const meal_NU_veg = total_portions_fruit_veg / demand_personal_veg;
+  const impact_alloc_cal = ((meal_NU_cal * energy_economic_allocation * full_economic_allocation) / ((meal_NU_cal * energy_economic_allocation * full_economic_allocation) + (meal_NU_fibre * fibre_economic_allocation * full_economic_allocation) + (meal_NU_protein * protein_economic_allocation * full_economic_allocation) + (meal_NU_veg * veg_economic_allocation * full_economic_allocation)));
+  const PwES_climate = (total_climate_change * impact_alloc_cal / total_calories) / (climate_pb_cal / demand_national_calories);
+  const PwES_land = (total_land_use * impact_alloc_cal / total_calories) / (land_pb_cal / demand_national_calories);
+  const PwES_water = (total_water_use * impact_alloc_cal / total_calories) / (water_pb_cal / demand_national_calories);
+
+  // Check for division by zero
+  if (PwES_climate !== 0) {
+    climate_target = total_climate_change / PwES_climate;
+  }
+  if (PwES_land !== 0) {
+    land_target = total_land_use / PwES_land;
+  }
+  if (PwES_water !== 0) {
+    water_target = total_water_use / PwES_water;
+  }
+  
+  // Function to calculate normalization factor 
+  function getNormalizationFactor_e(index) {
+    switch (index) {
+      case 0: // climate
+        return climate_target;
+      case 1: // land
+        return land_target;
+      case 2: // water
+        return water_target;
+      default:
+        return 1;
+    }
+  }
+
+// Function to calculate normalization factor 
+  function getNormalizationFactor_m(index) {
+    switch (index) {
+      case 0: // climate
+        return PwES_climate;
+      case 1: // land
+        return PwES_land;
+      case 2: // water
+        return PwES_water;
+      default:
+        return 1;
+    }
+  }
+
+  let combinedNutritionalData = [0, 0, 0, 0];
+  let combinedEnvironmentalData = [0, 0, 0];
+
+
+  selectedFoods.forEach(food => {
+    const index = foodItems.indexOf(food);
+    // Sum up nutritional data
+    for (let i = 0; i < 4; i++) {
+      combinedNutritionalData[i] += nutritionalDataSets[index][i] / getNormalizationFactor_n(i); // Normalize nutritional data
+    }
+    // Sum up environmental data
+    for (let i = 0; i < 3; i++) {
+      combinedEnvironmentalData[i] += environmentalDataSets[index][i] / getNormalizationFactor_e(i);
+    }
+  });
+
+
+// Define arrays to store background and border colors for each data point
+const backgroundColorArray2 = [];
+const borderColorArray2 = [];
+
+// Loop through the combinedNutritionalData array
+combinedNutritionalData.forEach(value => {
+    // Check the value range and set the color accordingly
+    if (value >= 0.8 && value <= 1.2) {
+        backgroundColorArray2.push('rgba(39, 83, 23, 0.4)'); // Green
+        borderColorArray2.push('rgba(39, 83, 23, 1)');
+    } else if ((value >= 0.6 && value < 0.8) || (value > 1.2 && value <= 1.4)) {
+        backgroundColorArray2.push('rgba(228, 126, 90, 0.4)'); // Orange
+        borderColorArray2.push('rgba(228, 126, 90, 1)');
+    } else {
+        backgroundColorArray2.push('rgba(209, 163, 117, 0.4)'); // Red
+        borderColorArray2.push('rgba(209, 163, 117, 1)');
+    }
+});
+
+nutritionalChart = new Chart(nutritionalCtx, {
+    type: 'bar',
+    data: {
+        labels: dataLabels.slice(0, 4),
+        datasets: [{
+            label: "Combined Nutritional Data",
+            data: combinedNutritionalData,
+            backgroundColor: backgroundColorArray2,
+            borderColor: borderColorArray2,
+            borderWidth: 1
+        }, {
+            label: 'Nutrition targets',
+            type: 'line',
+            data: [1, 1, 1, 1],
+            fill: false,
+            borderColor: 'rgba(100, 150, 132, 1)',
+            borderWidth: 2,
+            pointRadius: 0
+        }]
+    },
+    options: {
+        animation: {
+            duration: 0 // Set animation duration to 0 milliseconds
+        },
+        scales: {
+            x: {
+                ticks: {
+                    font: {
+                        family: 'Arial', // Change font family here
+                        size: 10, // Change font size here
+                        style: 'normal', // Change font style here (italic, normal, oblique)
+                        color: 'rgb(255, 0, 0)' // Change font color here (in rgb format)
+                    }
+                }
+            },
+            y: {
+                ticks: {
+                    font: {
+                        family: 'Arial', // Change font family here
+                        size: 10, // Change font size here
+                        style: 'normal', // Change font style here (italic, normal, oblique)
+                        color: 'rgb(0, 255, 0)' // Change font color here (in rgb format)
+                    }
+                },
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        var label = '';
+                        if (context.parsed.y !== null) {
+                            // Use different data sources based on the index
+                            switch (context.dataIndex) {
+                                case 0:
+                                    label += total_calories.toFixed(0) + ' kcal';
+                                    break;
+                                case 1:
+                                    label += total_fibre.toFixed(0) + ' g';
+                                    break;
+                                case 2:
+                                    label += total_protein.toFixed(1)+ ' g';
+                                    break;
+                                case 3:
+                                    label += total_portions_fruit_veg.toFixed(1) + ' portions';
+                                    break;
+                                default:
+                                    label += context.parsed.y.toFixed(1);
+                            }
+                        }
+                        return label;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Define arrays to store background and border colors for each data point
+const backgroundColorArray = [];
+const borderColorArray = [];
+
+// Loop through the combinedEnvironmentalData array
+combinedEnvironmentalData.forEach(value => {
+    // Check if the data point is greater than 1
+    if (value > 1) {
+        // If greater than 1, set red color
+        backgroundColorArray.push('rgba(209, 163, 117, 0.4)');
+        borderColorArray.push('rgba(209, 163, 117, 1)');
+    } else {
+        // If less than or equal to 1, set green color
+        backgroundColorArray.push('rgba(39, 83, 23, 0.4)');
+        borderColorArray.push('rgba(39, 83, 23, 1)');
+    }
+});
+
+
+// Create the chart
+environmentalChart = new Chart(environmentalCtx, {
+    type: 'bar',
+    data: {
+        labels: dataLabels.slice(4, 7),
+        datasets: [{
+            label: "Combined Environmental Impact",
+            data: combinedEnvironmentalData,
+            backgroundColor: backgroundColorArray,
+            borderColor: borderColorArray,
+            borderWidth: 1
+      }, {
+        label: 'Impact targets',
+        type: 'line',
+        data: [1, 1, 1],
+        fill: false,
+        borderColor: 'rgba(100, 150, 132, 1)',
+        borderWidth: 2,
+        pointRadius: 0
+      }]
+    },
+    options: {
+        animation: {
+            duration: 0 // Set animation duration to 0 milliseconds
+        },
+        scales: {
+            x: {
+                ticks: {
+                    font: {
+                        family: 'Arial', // Change font family here
+                        size: 10, // Change font size here
+                        style: 'normal', // Change font style here (italic, normal, oblique)
+                        color: 'rgb(255, 0, 0)' // Change font color here (in rgb format)
+                    }
+                }
+            },
+            y: {
+                ticks: {
+                    font: {
+                        family: 'Arial', // Change font family here
+                        size: 10, // Change font size here
+                        style: 'normal', // Change font style here (italic, normal, oblique)
+                        color: 'rgb(0, 255, 0)' // Change font color here (in rgb format)
+                    }
+                },
+                beginAtZero: true
+            }
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+            tooltip: {
+                callbacks: {
+                  label: function(context) {
+                        var label = '';
+                        if (context.parsed.y !== null) {
+                            // Use different data sources based on the index
+                            switch (context.dataIndex) {
+                                case 0:
+                                    label += total_climate_change.toFixed(2) + ' kg CO\u2082-eq';
+                                    break;
+                                case 1:
+                                    label += total_land_use.toFixed(2) + ' m²-year';
+                                    break;
+                                case 2:
+                                    label += total_water_use.toFixed(0)+ ' L';
+                                    break;
+                                default:
+                                    label += context.parsed.y.toFixed(1);
+                            }
+                        }
+                        return label;
+                    }
+                }
+            }
+        },
+        legend: {
+            display: false // Hides the legend
+        }
+    }
+});
+
+// Check if any data point is greater than 1 and set colors based on the condition
+const sus_pwes = [PwES_climate, PwES_land, PwES_water].some(value => value > 1);
+const backgroundColor1 = sus_pwes ? 'rgba(209, 163, 117, 0.4)' : 'rgba(39, 83, 23, 0.4)';
+const borderColor1 = sus_pwes ? 'rgba(209, 163, 117, 1)' : 'rgba(39, 83, 23, 1)';
+
+// Define your data for the radar chart with PwES values
+metricChart = new Chart(metricCtx, {
+    type: 'radar',
+    data: {
+        labels: ['Climate change: ' + (PwES_climate*100).toFixed(0) + '%', 'Land use: ' + (PwES_land*100).toFixed(0) + '%', 'Water use: ' + (PwES_water*100).toFixed(0) + '%'],
+        datasets: [{
+            label: "PwES",
+            data: [PwES_climate, PwES_land, PwES_water],
+            backgroundColor: backgroundColor1,
+            borderColor: borderColor1,
+            borderWidth: 1
+        }, {
+            type: 'radar',
+            data: [1, 1, 1], // Example data for the "Impact targets" dataset
+            fill: false,
+            borderColor: 'rgba(100, 150, 132, 1)',
+            borderWidth: 2,
+            pointRadius: 0
+        },{  
+            type: 'radar',
+            data: [0, 0, 0], // forcing y=0 axis starting point
+            fill: false,
+            borderColor: 'rgba(100, 150, 132, 0)',
+            borderWidth: 2,
+            pointRadius: 0
+        }]
+    },
+    options: {
+      animation: {
+        duration: 0 // Set animation duration to 0 milliseconds
+      },
+
+        scales: {
+              y: {
+                  beginAtZero: true,
+                  ticks: {
+                      display: false // Hide the labels on the y-axis
+                  },
+                  display: false, // Hides the labels on the y-axis
+
+              }
+          },
+        plugins: {
+          legend: {
+            display: false
+          },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        var label = '';
+                        if (context.parsed.y !== null) {
+                            // Use different data sources based on the index
+                            switch (context.dataIndex) {
+                                case 0:
+                                    label += (PwES_climate*100).toFixed(0) + '%';
+                                    break;
+                                case 1:
+                                    label += (PwES_land*100).toFixed(0) + '%';
+                                    break;
+                                case 2:
+                                    label += (PwES_water*100).toFixed(0) + '%';
+                                    break;
+                                default:
+                                    label += context.parsed.y.toFixed(1);
+                            }
+                        }
+                        return label;
+                    }
+                }
+            }
+        },
+    }
+});
+
+
+/*
+  // Display PwES values
+  document.getElementById('pwesClimate').textContent = `PwES Climate: ${(100*PwES_climate).toFixed(0) + '%'}`;
+  document.getElementById('pwesLand').textContent = `PwES Land: ${(100*PwES_land).toFixed(0) + '%'}`;
+  document.getElementById('pwesWater').textContent = `PwES Water: ${(100*PwES_water).toFixed(0)+ '%'}`;
+  document.getElementById('TargetClimate').textContent = `Climate change impact target: ${climate_target.toFixed(2)}`;
+  document.getElementById('TargetLand').textContent = `Land use impact target: ${land_target.toFixed(2)}`;
+  document.getElementById('TargetWater').textContent = `Water use impact target: ${water_target.toFixed(2)}`;
+
+  // Display additional calculated values
+  document.getElementById('caloriesValue').textContent = `Total Calories: ${total_calories.toFixed(2)}`;
+  document.getElementById('fibreValue').textContent = `Total Fibre: ${total_fibre.toFixed(2)}`;
+  document.getElementById('proteinValue').textContent = `Total Protein: ${total_protein.toFixed(2)}`;
+  document.getElementById('portionsValue').textContent = `Total Portions of Fruit/Veg: ${total_portions_fruit_veg.toFixed(2)}`;
+  document.getElementById('climateChangeValue').textContent = `Total Climate Change Impact: ${total_climate_change.toFixed(2)}`;
+  document.getElementById('landValue').textContent = `Total land use Impact: ${total_land_use.toFixed(2)}`;
+  document.getElementById('waterValue').textContent = `Total water use Impact: ${total_water_use.toFixed(2)}`;
+*/
+}
+
+function toggleFoodSelection(food) {
+  selectedFoods.push(food);
+  updateCharts();
+  updateSelectedFoodsList();
+}
+
+// Update the function to accept the name of the food item pressed
+function updateSelectedFoodsList() {
+  const selectedFoodsList = document.getElementById('selectedFoodsList');
+  selectedFoodsList.innerHTML = '';
+  const selectedFoodsCount = {};
+  selectedFoods.forEach(food => {
+    selectedFoodsCount[food] = (selectedFoodsCount[food] || 0) + 1;
+  });
+  Object.entries(selectedFoodsCount).forEach(([food, count]) => {
+    const listItem = document.createElement('li');
+    const multiple = foodMultiples[food] || 1;
+    listItem.textContent = `${food}: ${(count * multiple * 1000).toFixed(0)} g`;
+    
+    // Create 'x' button
+    const closeButton = document.createElement('button');
+    closeButton.textContent = 'x';
+    closeButton.classList.add('remove-button');
+    
+    // Add margin or padding to the 'x' button for a gap
+    closeButton.style.marginLeft = '5px'; // Adjust the value as needed
+
+    // Add click event listener to remove the item
+    closeButton.addEventListener('click', () => {
+      const index = selectedFoods.indexOf(food);
+      if (index !== -1) {
+        selectedFoods.splice(index, 1);
+        updateSelectedFoodsList(); // Update the list after removal
+        updateCharts(); // Update the charts after removal
+        // You may also want to update any other dependent components or data
+      }
+    });
+    
+    // Append the 'x' button to the list item
+    listItem.appendChild(closeButton);
+    
+    selectedFoodsList.appendChild(listItem);
+  });
+}
+
+// Function to reset selected foods
+function resetSelectedFoods() {
+  selectedFoods = [];
+  updateCharts();
+  updateSelectedFoodsList();
+}
+
+// Automatically trigger the reset button click when the HTML loads
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('resetButton').click();
+});
+
+// Add event listener to reset button
+document.getElementById('resetButton').addEventListener('click', resetSelectedFoods);
+
+// Call updateSelectedFoodsList() initially to populate the list with initial data
+updateSelectedFoodsList();
+
+</script>
+
+</body>
+</html>
